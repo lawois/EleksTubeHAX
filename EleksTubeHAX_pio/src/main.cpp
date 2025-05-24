@@ -16,6 +16,7 @@
 #include "Menu.h"
 #include "StoredConfig.h"
 #include "WiFi_WPS.h"
+#include "SerialCommandHandler.h" // Added for serial commands
 #if defined(MQTT_PLAIN_ENABLED) || defined(MQTT_HOME_ASSISTANT)
 #include "MQTT_client_ips.h"
 #endif
@@ -207,6 +208,7 @@ void setup()
 
 void loop()
 {
+  handleSerialInput(); // Added for serial commands
   uint32_t millis_at_top = millis();
   // Do all the maintenance work
   WifiReconnect(); // if not connected attempt to reconnect

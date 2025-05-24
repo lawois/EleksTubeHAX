@@ -110,8 +110,109 @@ For detailed pictures for most of the clocks see the `documentation` subfolder.
     
 *   Debug outputs via the serial port
     
+*   Serial Terminal Interface for advanced configuration and control (see below).
+    
 
-### 3.1 Home Assistant integration with extensive MQTT features
+### 3.1 Serial Terminal Configuration
+
+A serial terminal interface is available for advanced configuration, debugging, and headless setup of the clock. This allows direct interaction with the clock's settings via a command-line interface.
+
+**Accessing the Serial Terminal:**
+
+1.  Connect the clock to your computer via a USB cable.
+2.  Open a serial terminal program. Common options include:
+    *   PuTTY (Windows)
+    *   minicom (Linux)
+    *   Screen (macOS, Linux)
+    *   Arduino IDE Serial Monitor
+3.  Configure the connection settings:
+    *   **Port:** The COM port assigned to your clock (e.g., COM3 on Windows, /dev/ttyUSB0 on Linux).
+    *   **Baud Rate:** 115200
+    *   **Data Bits:** 8
+    *   **Parity:** None
+    *   **Stop Bits:** 1
+    *   **Line Ending:** Newline (`\n` or LF). Ensure your terminal sends this when you press Enter.
+
+**Available Commands:**
+
+The interface provides a range of commands to manage WiFi, backlight, clock settings, and system functions. Commands are case-insensitive. Type `help` in the terminal to see the full list of available commands and their syntax.
+
+Here is the output of the `help` command:
+
+```
+OK: Available commands:
+help
+get wifi_ssid
+set wifi_ssid <ssid>
+get wifi_password
+set wifi_password <password>
+get bl_pattern
+set bl_pattern <pattern_name_or_index>
+get bl_color_phase
+set bl_color_phase <0-65535>
+get bl_intensity
+set bl_intensity <0-255>
+get bl_pulse_bpm
+set bl_pulse_bpm <rate>
+get bl_breath_per_min
+set bl_breath_per_min <rate>
+get bl_rainbow_sec
+set bl_rainbow_sec <seconds>
+get clk_twelve_hour
+set clk_twelve_hour <true|false|1|0>
+get clk_time_zone_offset
+set clk_time_zone_offset <seconds_from_utc>
+get clk_blank_hours_zero
+set clk_blank_hours_zero <true|false|1|0>
+get clk_selected_graphic
+set clk_selected_graphic <index>
+save_config
+reboot
+get_config
+get_build_info
+```
+
+**Key Behaviors:**
+
+*   **Case Insensitive:** Commands and their parameters (like `true`/`false`) are not case-sensitive.
+*   **Saving Configuration:** Changes made using `set` commands are applied immediately to the running configuration but are **not** automatically saved to persistent storage. To ensure your settings persist after a reboot, you **must** use the `save_config` command.
+*   **Rebooting:** The `reboot` command will restart the clock.
+
+**Usage Examples:**
+
+*   **Setting up WiFi:**
+    ```
+    set wifi_ssid MyHomeNetwork
+    set wifi_password MySecurePassword123
+    save_config
+    reboot 
+    ```
+    *(After rebooting, the clock will attempt to connect to the specified WiFi network).*
+
+*   **Checking a setting:**
+    ```
+    get bl_intensity 
+    ``` 
+    *(This will return the current backlight intensity, e.g., `OK: bl_intensity=100`)*
+
+*   **Changing the clock face (assuming graphic index 2 exists):**
+    ```
+    set clk_selected_graphic 2
+    save_config 
+    ```
+    *(The clock face will change immediately, and `save_config` ensures it's remembered).*
+
+*   **Getting all current settings:**
+    ```
+    get_config
+    ```
+
+*   **Getting firmware build information:**
+    ```
+    get_build_info
+    ```
+
+### 3.2 Home Assistant integration with extensive MQTT features
 
 If activated in the code, clock can be remote controlled via Home Assistant - one of the leading free home automation solutions (see [Home Assistant Homepage](https://www.home-assistant.io)).
 
@@ -581,7 +682,7 @@ Note: The `_USER_DEFINES.h` is included in the default `.gitignore` file, so tha
 
 #### 5.6.5.1 Home Assistant
 
-##### 5.6.5.1.1 Setup
+##### 5.6.6.1.1 Setup
 
 If you want to integrate the clock into your Home Assistant, you need to make sure, that Home Assistant and the clock uses the same MQTT broker.
 
@@ -603,7 +704,7 @@ Note: `#define MQTT_CLIENT` is used as a unique device name (i.e. it should be d
 
 Note: If you want to use an internet-based broker, you can use HiveMQ. You will need to create an account there and set it up in HA and in here. 'MQTT\_USE\_TLS' must be defined, because HiveMQ only supports encrypted connections. The HiveMQ TLS cert is based on the root CA of Let's Encrypt, so you also need to copy the 'mqtt-ca-root.pem' file from the 'data - other graphics' folder into the 'data' folder of the PIO project and upload the data partition (file system) with the changed app partition. Other brokers or your locally used cert for your MQTT broker may need another root CA to be set. See: [Connect HA to HiveMQ](https://www.hivemq.com/blog/connect-home-assistant-to-hivemq-cloud/)
 
-##### 5.6.4.1.2 Used integrations
+##### 5.6.6.1.2 Used integrations
 
 Interactions between the firmware of the clock and Home Assistant is done like descriped in the MQTT integration documentations (see below).
 
@@ -622,7 +723,7 @@ See the HA MQTT documentation for details of the used MQTT integrations:
 *   [MQTT Number integration](https://www.home-assistant.io/integrations/number.mqtt/)
     
 
-##### 5.6.4.1.3 Usage
+##### 5.6.6.1.3 Usage
 
 After a successful auto discovery, you will find a new device under "Setting -> Devices and Services -> MQTT -> XX devices", named like your `MQTT_CLIENT` define.
 
@@ -646,9 +747,9 @@ For the 'back light', the LED colour and mode can be set.
 
 The settings for the LED modes and the general clock settings can only be set from the "Configuration" entity.
 
-#### 5.6.5.2 MQTT without Home Assistant
+#### 5.6.6.2 MQTT without Home Assistant
 
-##### 5.6.5.2.1 Setup
+##### 5.6.6.2.1 Setup
 
 If the `MQTT_HOME_ASSISTANT` is not enabled, but `MQTT_PLAIN_ENABLED` is, the MQTT support is limited. This is mostly intended to work with [SmartNest.cz](https://www.smartnest.cz/) service, which is a simple user interface. It can be extended / integrated with Google assistant, Alexa or SmartThings.
 
@@ -658,7 +759,7 @@ You will need to create an account, set up the device there and get the ID; and 
 
 Note: If you want to use encrypted connection to your broker, you need to enable 'MQTT\_USE\_TLS' and copy a valid root CA cert file to the 'data' folder. See the notes under the HA section for HiveMQ above.
 
-#### 5.6.5.3 Debugging MQTT
+#### 5.6.6.3 Debugging MQTT
 
 Further analysis or debugging problems with the MQTT code is easier to perform using a MQTT message reader tool, for example, "MQTT Explorer", a common HA Add-On for users, who prefer manual configuration. See [HA forum post for MQTT Explorer Add-On](https://community.home-assistant.io/t/addon-mqtt-explorer-new-version/603739).
 
