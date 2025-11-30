@@ -60,6 +60,7 @@ bool isNightTime(uint8_t current_hour);
 void checkDimmingNeeded(void);
 #endif
 void UpdateDstEveryNight(void);
+bool applyClockGraphicCommand(int requested_idx, const char *source);
 #ifdef HARDWARE_NovelLife_SE_CLOCK // NovelLife_SE Clone XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void GestureStart();
 void HandleGestureInterupt(void);   // only for NovelLife SE
@@ -285,9 +286,7 @@ void loop()
     Serial.print(MQTTCommandState);
     Serial.print(", index: ");
     Serial.println(idx);
-    uclock.setClockGraphicsIdx(idx);
-    tfts.current_graphic = uclock.getActiveGraphicIdx();
-    updateClockDisplay(TFTs::force); // redraw everything
+    applyClockGraphicCommand(idx, "state");
   }
 
   if (MQTTCommandMainBrightnessReceived)
@@ -350,17 +349,13 @@ void loop()
   {
     MQTTCommandGraphicReceived = false;
 
-    uclock.setClockGraphicsIdx(MQTTCommandGraphic);
-    tfts.current_graphic = uclock.getActiveGraphicIdx();
-    updateClockDisplay(TFTs::force); // redraw everything
+    applyClockGraphicCommand(MQTTCommandGraphic, "graphic");
   }
 
   if (MQTTCommandMainGraphicReceived)
   {
     MQTTCommandMainGraphicReceived = false;
-    uclock.setClockGraphicsIdx(MQTTCommandMainGraphic);
-    tfts.current_graphic = uclock.getActiveGraphicIdx();
-    updateClockDisplay(TFTs::force); // redraw everything
+    applyClockGraphicCommand(MQTTCommandMainGraphic, "main graphic");
   }
 
   if (MQTTCommandUseTwelveHoursReceived)
@@ -889,6 +884,34 @@ void checkDimmingNeeded()
   }
 }
 #endif // DIMMING
+
+bool applyClockGraphicCommand(int requested_idx, const char *source)
+{
+  if (tfts.NumberOfClockFaces == 0)
+  {
+    Serial.print("Ignoring clock graphic request from ");
+    Serial.print(source);
+    Serial.println(": no clock faces available.");
+    return false;
+  }
+
+  if ((requested_idx < 1) || (requested_idx > tfts.NumberOfClockFaces))
+  {
+    Serial.print("Ignoring clock graphic request from ");
+    Serial.print(source);
+    Serial.print(": index ");
+    Serial.print(requested_idx);
+    Serial.print(" is out of range (1-");
+    Serial.print(tfts.NumberOfClockFaces);
+    Serial.println(")");
+    return false;
+  }
+
+  uclock.setClockGraphicsIdx(requested_idx);
+  tfts.current_graphic = uclock.getActiveGraphicIdx();
+  updateClockDisplay(TFTs::force); // redraw everything
+  return true;
+}
 
 void UpdateDstEveryNight()
 {
